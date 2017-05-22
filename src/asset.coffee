@@ -39,6 +39,9 @@ class Asset extends EventEmitter
         
     @fromBuffer: (buffer) ->
         return new Asset new BufferSource(buffer)
+
+    @fromSource: (source) ->
+        return new Asset source
         
     start: (decode) ->
         return if @active

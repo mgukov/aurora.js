@@ -34,7 +34,11 @@ class Player extends EventEmitter
         @asset.on 'decodeStart', =>
             @queue = new Queue(@asset)
             @queue.once 'ready', @startPlaying
-            
+            @queue.on 'buffering', =>
+                @device?.stop()
+                @queue.once 'ready', =>
+                    @device?.start()
+                
         @asset.on 'format', (@format) =>
             @emit 'format', @format
             
@@ -55,6 +59,9 @@ class Player extends EventEmitter
         
     @fromBuffer: (buffer) ->
         return new Player Asset.fromBuffer(buffer)
+
+    @fromSource: (source) ->
+        return new Player Asset.fromSource(source)
         
     preload: ->
         return unless @asset
