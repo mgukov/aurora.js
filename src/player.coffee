@@ -15,6 +15,7 @@ AudioDevice = require './device'
 
 class Player extends EventEmitter
     constructor: (@asset) ->
+        @waiting = false
         @playing = false
         @buffered = 0
         @currentTime = 0
@@ -33,11 +34,11 @@ class Player extends EventEmitter
         
         @asset.on 'decodeStart', =>
             @queue = new Queue(@asset)
-            @queue.once 'ready', @startPlaying
-            @queue.on 'buffering', =>
-                @device?.stop()
-                @queue.once 'ready', =>
-                    @device?.start()
+            @queue.once 'ready', =>
+                @startPlaying()
+                @queue.on 'ready', =>
+                    if @waiting
+                        @wakeUp()
                 
         @asset.on 'format', (@format) =>
             @emit 'format', @format
@@ -94,6 +95,21 @@ class Player extends EventEmitter
         @pause()
         @asset.stop()
         @device?.destroy()
+
+    wait: -> 
+        return unless @playing
+        @waiting = true
+        @device?.stop()
+        console.log 'stop audio player, wait audio data'
+
+    wakeUp: ->
+        return unless (@playing and @waiting)
+        
+        @waiting = false
+        @device?.start()
+
+        console.log 'wake up audio player'
+
         
     seek: (timestamp) ->
         @device?.stop()
@@ -158,7 +174,7 @@ class Player extends EventEmitter
                     # if we ran out of data in the middle of 
                     # the track, stop the timer but don't change
                     # the playback state
-                    @device.stop()
+                    @wait()
                     
             return
         
